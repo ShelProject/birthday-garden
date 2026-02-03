@@ -4,96 +4,153 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Birthday Garden</title>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka+One&family=Nunito:wght@400;700&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            /* CHANGE BACKGROUND HERE: Paste any image link inside url('') */
-            --bg-image: url('https://images.unsplash.com/photo-1558236214-9988587114bd?q=80&w=1920&auto=format&fit=crop');
+            /* --- 🎨 CHANGE YOUR PICTURES HERE 🎨 --- */
+            
+            /* 1. The Sky (Background) */
+            --sky-image: url('https://images.unsplash.com/photo-1604093882750-3ed498f3813b?q=80&w=1920&auto=format&fit=crop');
+            
+            /* 2. The Ground (Bottom half) */
+            --ground-image: url('https://images.unsplash.com/photo-1533460004989-bf46a2902e1b?q=80&w=1920&auto=format&fit=crop');
         }
 
-        body, html { margin: 0; padding: 0; overflow: hidden; font-family: 'Segoe UI', sans-serif; height: 100%; }
-        
-        #garden {
-            width: 100vw; height: 100vh;
-            background: var(--bg-image);
-            background-size: cover;
-            background-position: center;
-            position: relative;
+        body, html { margin: 0; padding: 0; overflow: hidden; height: 100%; font-family: 'Nunito', sans-serif; }
+
+        /* --- LAYERS --- */
+        #world {
+            position: relative; width: 100%; height: 100%; overflow: hidden;
         }
 
-        /* UI Buttons */
-        #ui { position: absolute; bottom: 30px; width: 100%; text-align: center; pointer-events: none; z-index: 50; }
-        .main-btn { 
-            pointer-events: auto; background: white; color: #333; 
-            font-size: 1.1rem; padding: 12px 24px; border-radius: 30px; border: none;
-            box-shadow: 0 4px 15px rgba(0,0,0,0.3); cursor: pointer; font-weight: bold;
+        #sky-layer {
+            position: absolute; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: var(--sky-image);
+            background-size: cover; background-position: center bottom;
+            z-index: 1;
+        }
+
+        #ground-layer {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 45%; /* Ground takes up bottom 45% */
+            background-image: var(--ground-image);
+            background-size: cover; background-position: center top;
+            z-index: 2;
+            /* Optional: Add a fuzzy edge so it blends into the sky */
+            mask-image: linear-gradient(to bottom, transparent, black 10%);
+            -webkit-mask-image: linear-gradient(to bottom, transparent, black 10%);
+        }
+
+        /* --- TITLE --- */
+        #main-title {
+            position: absolute; top: 10%; width: 100%; text-align: center; z-index: 10;
+            pointer-events: none;
+        }
+        h1 {
+            font-family: 'Fredoka One', cursive; color: #fff; font-size: 3.5rem; margin: 0;
+            text-shadow: 0px 4px 10px rgba(0,0,0,0.3); letter-spacing: 2px;
+            animation: float 4s ease-in-out infinite;
+        }
+        @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
+
+        /* --- UI BUTTONS --- */
+        #ui { position: absolute; bottom: 30px; width: 100%; text-align: center; z-index: 50; pointer-events: none; }
+        .big-btn { 
+            pointer-events: auto; background: #FF6B6B; color: white; 
+            font-family: 'Fredoka One', cursive; font-size: 1.2rem;
+            padding: 15px 30px; border-radius: 50px; border: none;
+            box-shadow: 0 6px 0px #C92A2A, 0 10px 10px rgba(0,0,0,0.2);
+            cursor: pointer; transition: transform 0.1s;
+        }
+        .big-btn:active { transform: translateY(4px); box-shadow: 0 2px 0px #C92A2A; }
+
+        /* --- DRAWING MODAL --- */
+        .modal-overlay {
+            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.8);
+            z-index: 100; align-items: center; justify-content: center;
+            backdrop-filter: blur(5px);
+        }
+        .modal-box {
+            background: white; padding: 20px; border-radius: 20px;
+            box-shadow: 0 20px 50px rgba(0,0,0,0.3); text-align: center;
+            max-width: 90%; width: 350px; position: relative;
+        }
+
+        canvas { border: 2px dashed #ccc; border-radius: 15px; cursor: crosshair; touch-action: none; background: #fff; }
+
+        /* --- CUSTOM COLOR PICKER --- */
+        .palette { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 15px 0; }
+        .swatch {
+            width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+            border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
             transition: transform 0.2s;
         }
-        .main-btn:active { transform: scale(0.95); }
+        .swatch:hover, .swatch.active { transform: scale(1.2); border-color: #333; }
 
-        /* Drawing Overlay */
-        #draw-overlay {
-            display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
-            z-index: 100; flex-direction: column; align-items: center; justify-content: center;
-        }
+        /* --- BIRTHDAY CARD POPUP --- */
+        #card-content { background: #fff9f0; border: 4px solid #FFD700; }
+        #card-image { width: 180px; height: 180px; object-fit: contain; margin: 10px auto; display: block; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1)); }
+        #card-wish { font-size: 1.1rem; color: #555; margin: 15px 0; font-style: italic; line-height: 1.5; }
+        #card-sender { font-family: 'Fredoka One', cursive; font-size: 1.4rem; color: #FF6B6B; }
 
-        #canvas-wrapper { background: white; border-radius: 15px; padding: 10px; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        canvas { border: 1px solid #ddd; touch-action: none; cursor: crosshair; background: #fff; border-radius: 10px; }
-
-        .tools { margin-top: 15px; display: flex; gap: 10px; align-items: center; }
-        button { padding: 8px 16px; border-radius: 20px; border: none; cursor: pointer; font-weight: 600; }
-        .btn-save { background: #4CAF50; color: white; }
-        .btn-cancel { background: #f44336; color: white; }
-        
-        /* Color Picker Styling */
-        input[type="color"] {
-            -webkit-appearance: none; border: none; width: 40px; height: 40px; cursor: pointer; background: none;
-        }
-        input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
-        input[type="color"]::-webkit-color-swatch { border: none; border-radius: 50%; border: 2px solid #ddd; }
-
-        /* Flower Styling */
+        /* --- FLOWERS IN GARDEN --- */
         .flower {
-            position: absolute; width: 70px; height: 70px;
+            position: absolute; width: 80px; height: 80px;
             cursor: pointer; transition: transform 0.3s;
-            filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.2));
+            filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.3));
+            z-index: 5;
+            /* Anchors flower to the bottom center of its position */
+            transform-origin: bottom center; 
         }
         .flower img { width: 100%; height: 100%; object-fit: contain; }
-        .flower:hover { transform: scale(1.3) translateY(-10px); z-index: 99; }
+        .flower:hover { transform: scale(1.3) translateY(-10px) !important; z-index: 99; }
+        
+        /* Slight sway animation */
+        .flower { animation: sway 3s ease-in-out infinite alternate; }
+        @keyframes sway { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
 
-        .tooltip {
-            visibility: hidden; background: rgba(255, 255, 255, 0.95); color: #333;
-            text-align: center; border-radius: 12px; padding: 12px;
-            position: absolute; bottom: 110%; left: 50%; transform: translateX(-50%);
-            box-shadow: 0 5px 20px rgba(0,0,0,0.2); width: 180px; pointer-events: none;
-            font-size: 0.9rem;
-            opacity: 0; transition: opacity 0.3s;
-        }
-        .flower:hover .tooltip, .flower:active .tooltip { visibility: visible; opacity: 1; }
-        .sender-name { color: #e91e63; font-weight: bold; display: block; margin-bottom: 4px; }
-
+        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
+        button.secondary { background: #eee; color: #333; padding: 10px 20px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; }
+        button.primary { background: #4CAF50; color: white; padding: 10px 20px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; }
     </style>
 </head>
 <body>
 
-<div id="garden"></div>
-
-<div id="ui">
-    <button class="main-btn" onclick="openDrawer()">✏️ Draw a Flower & Wish</button>
+<div id="world">
+    <div id="sky-layer"></div>
+    <div id="ground-layer"></div>
+    
+    <div id="garden-container"></div>
 </div>
 
-<div id="draw-overlay">
-    <div id="canvas-wrapper">
+<div id="main-title">
+    <h1>Happy Birthday!</h1>
+</div>
+
+<div id="ui">
+    <button class="big-btn" onclick="openDrawer()">✏️ Plant a Wish</button>
+</div>
+
+<div id="draw-modal" class="modal-overlay">
+    <div class="modal-box">
+        <h2 style="font-family:'Fredoka One'; color:#444; margin-top:0;">Draw a Flower!</h2>
         <canvas id="drawingCanvas" width="300" height="300"></canvas>
+        <div class="palette" id="colorPalette"></div>
+        <div class="btn-group">
+            <button class="secondary" onclick="closeDrawer()">Cancel</button>
+            <button class="secondary" onclick="clearCanvas()">Clear</button>
+            <button class="primary" onclick="saveFlower()">Plant it!</button>
+        </div>
     </div>
-    
-    <div class="tools">
-        <input type="color" id="colorPicker" value="#ff0000" title="Choose Color">
-        
-        <button onclick="clearCanvas()">Clear</button>
-        <button class="btn-cancel" onclick="closeDrawer()">Cancel</button>
-        <button class="btn-save" onclick="saveFlower()">Plant!</button>
+</div>
+
+<div id="card-modal" class="modal-overlay" onclick="closeCard(event)">
+    <div class="modal-box" id="card-content">
+        <h2 id="card-sender">Sender Name</h2>
+        <img id="card-image" src="" alt="Flower">
+        <p id="card-wish">"Wish..."</p>
+        <button class="secondary" onclick="document.getElementById('card-modal').style.display='none'">Close Card</button>
     </div>
-    <p style="color:white; margin-top:10px; font-size:0.8rem;">Pick a color and draw!</p>
 </div>
 
 <script type="module">
@@ -108,6 +165,7 @@
     storageBucket: "ccbirthdaygarden.firebasestorage.app",
     messagingSenderId: "706882366980",
     appId: "1:706882366980:web:c7a9cc8be0b1ca0d190f51"
+
     };
     // ---------------------------------------
 
@@ -116,10 +174,30 @@
     
     const canvas = document.getElementById('drawingCanvas');
     const ctx = canvas.getContext('2d');
-    const colorPicker = document.getElementById('colorPicker');
     let drawing = false;
+    let currentColor = '#FF6B6B'; 
 
-    // Drawing Logic
+    // 20 Custom Colors
+    const colors = [
+        '#FF6B6B', '#FF9F43', '#FECA57', '#48DBFB', '#FF9FF3', 
+        '#54a0ff', '#5f27cd', '#ff6b6b', '#1dd1a1', '#feca57',
+        '#2e86de', '#8395a7', '#222f3e', '#c8d6e5', '#10ac84',
+        '#01a3a4', '#f368e0', '#00d2d3', '#341f97', '#273c75'
+    ];
+
+    const paletteDiv = document.getElementById('colorPalette');
+    colors.forEach(color => {
+        const swatch = document.createElement('div');
+        swatch.className = 'swatch';
+        swatch.style.backgroundColor = color;
+        swatch.onclick = () => {
+            currentColor = color;
+            document.querySelectorAll('.swatch').forEach(s => s.style.border = '2px solid white');
+            swatch.style.border = '2px solid #333';
+        };
+        paletteDiv.appendChild(swatch);
+    });
+
     const getPos = (e) => {
         const rect = canvas.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -132,16 +210,15 @@
     const draw = (e) => {
         if (!drawing) return;
         const { x, y } = getPos(e);
-        ctx.lineWidth = 4;
+        ctx.lineWidth = 5;
         ctx.lineCap = 'round';
-        ctx.strokeStyle = colorPicker.value; // Use the color picker value
+        ctx.strokeStyle = currentColor;
         ctx.lineTo(x, y);
         ctx.stroke();
         ctx.beginPath();
         ctx.moveTo(x, y);
     };
 
-    // Events
     canvas.addEventListener('mousedown', start);
     canvas.addEventListener('mousemove', draw);
     window.addEventListener('mouseup', end);
@@ -149,45 +226,53 @@
     canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
     canvas.addEventListener('touchend', end);
 
-    window.openDrawer = () => document.getElementById('draw-overlay').style.display = 'flex';
-    window.closeDrawer = () => {
-        document.getElementById('draw-overlay').style.display = 'none';
-        clearCanvas();
-    };
+    window.openDrawer = () => document.getElementById('draw-modal').style.display = 'flex';
+    window.closeDrawer = () => document.getElementById('draw-modal').style.display = 'none';
     window.clearCanvas = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Save Logic
+    window.openCard = (name, wish, image) => {
+        document.getElementById('card-sender').innerText = "From: " + name;
+        document.getElementById('card-wish').innerText = wish;
+        document.getElementById('card-image').src = image;
+        document.getElementById('card-modal').style.display = 'flex';
+    }
+    
+    window.closeCard = (e) => {
+        if(e.target.id === 'card-modal') {
+            document.getElementById('card-modal').style.display = 'none';
+        }
+    }
+
     window.saveFlower = async () => {
-        const name = prompt("What is your name?");
+        const name = prompt("Your Name:");
         if (!name) return;
         const wish = prompt("Write your birthday wish:");
         if (!wish) return;
 
         const drawingData = canvas.toDataURL("image/png");
         
-        // Save to Firebase
         try {
             await addDoc(collection(db, "wishes"), {
-                name, wish,
-                image: drawingData,
-                // Random position: x=5-90%, y=30-90% (keep flowers off the sky)
+                name, wish, image: drawingData,
+                // PLANTING LOGIC:
+                // x = 5% to 90% (horizontal)
+                // y = 60% to 90% (vertical) - This ensures it stays on the "Ground" layer (bottom 45%)
                 x: Math.random() * 85 + 5, 
-                y: Math.random() * 60 + 30,
+                y: Math.random() * 30 + 60,
                 timestamp: Date.now()
             });
-            alert("Flower Planted! 🌷");
             closeDrawer();
+            clearCanvas();
         } catch (error) {
-            console.error("Error adding document: ", error);
-            alert("Error saving! Check console.");
+            console.error("Error", error);
+            alert("Error planting flower. Check internet?");
         }
     };
 
-    // Load Logic
     const q = query(collection(db, "wishes"), orderBy("timestamp", "asc"));
     onSnapshot(q, (snapshot) => {
-        const garden = document.getElementById('garden');
-        garden.innerHTML = ''; // Reset garden to avoid duplicates
+        const container = document.getElementById('garden-container');
+        container.innerHTML = ''; 
         
         snapshot.forEach((doc) => {
             const data = doc.data();
@@ -196,18 +281,14 @@
             div.style.left = data.x + '%';
             div.style.top = data.y + '%';
             
-            // Random slight rotation for natural look
             const rot = (Math.random() * 20) - 10; 
             div.style.transform = `rotate(${rot}deg)`;
-
-            div.innerHTML = `
-                <img src="${data.image}">
-                <div class="tooltip">
-                    <span class="sender-name">${data.name}</span>
-                    ${data.wish}
-                </div>
-            `;
-            garden.appendChild(div);
+            
+            const img = document.createElement('img');
+            img.src = data.image;
+            div.appendChild(img);
+            div.onclick = () => openCard(data.name, data.wish, data.image);
+            container.appendChild(div);
         });
     });
 </script>
