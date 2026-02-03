@@ -1,3 +1,4 @@
+
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -6,6 +7,7 @@
     
     <title>Birthday Garden</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌻</text></svg>">
+    
     <meta property="og:title" content="Happy Birthday! 🎂">
     <meta property="og:description" content="Come plant a flower in our digital surprise garden!">
     
@@ -13,7 +15,7 @@
     
     <style>
         :root {
-            /* 2. BACKGROUND IMAGE (Upload 'background.jpg' to your GitHub!) */
+            /* 📸 YOUR BACKGROUND IMAGE (Upload 'background.jpg' to GitHub) */
             --bg-image: url('background.jpg');
         }
 
@@ -37,6 +39,7 @@
 
         /* --- UI BUTTONS --- */
         #ui { position: absolute; bottom: 30px; width: 100%; text-align: center; z-index: 50; pointer-events: none; }
+        
         .big-btn { 
             pointer-events: auto; background: #FF6B6B; color: white; 
             font-family: 'Fredoka One', cursive; font-size: 1.2rem;
@@ -44,6 +47,16 @@
             box-shadow: 0 6px 0px #C92A2A, 0 10px 10px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.1s;
         }
         .big-btn:active { transform: translateY(4px); box-shadow: 0 2px 0px #C92A2A; }
+
+        /* --- MUSIC BUTTON --- */
+        #music-control {
+            position: absolute; top: 20px; right: 20px; z-index: 60;
+            background: white; border: none; border-radius: 50%;
+            width: 50px; height: 50px; font-size: 24px; cursor: pointer;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
+            transition: transform 0.2s;
+        }
+        #music-control:active { transform: scale(0.9); }
 
         /* --- DRAWING MODAL --- */
         .modal-overlay {
@@ -66,7 +79,6 @@
 
         canvas { border: 2px dashed #ccc; border-radius: 15px; cursor: crosshair; touch-action: none; background: #fff; }
 
-        /* Color Palette */
         .palette { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 15px 0; }
         .swatch {
             width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
@@ -101,11 +113,13 @@
 </audio>
 
 <div id="world">
+    <button id="music-control" onclick="toggleMusic()">🔇</button>
+
     <div id="garden-container"></div>
 </div>
 
 <div id="main-title">
-    <h1>Happy Birthday!</h1>
+    <h1>Cheers to Another Year, Happy 26 !</h1>
 </div>
 
 <div id="ui">
@@ -161,18 +175,41 @@
     const canvas = document.getElementById('drawingCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     
-    // State
     let drawing = false;
     let currentTool = 'pen'; 
     let currentColor = '#FF6B6B'; 
     let currentRgb = { r: 255, g: 107, b: 107 }; 
 
-    // Music Player (Starts on first click)
+    // --- MUSIC LOGIC ---
+    const audio = document.getElementById('bgm');
+    const musicBtn = document.getElementById('music-control');
+    let musicStarted = false;
+
+    // 1. Manual Toggle Button
+    window.toggleMusic = () => {
+        if (audio.paused) {
+            audio.play().then(() => {
+                musicBtn.innerText = "🎵"; // Playing icon
+                musicStarted = true;
+            });
+        } else {
+            audio.pause();
+            musicBtn.innerText = "🔇"; // Muted icon
+        }
+    };
+
+    // 2. Auto-Start on First Click (Anywhere)
     window.addEventListener('click', () => {
-        document.getElementById('bgm').play().catch(() => {});
+        if (!musicStarted && audio.paused) {
+            audio.play().then(() => {
+                musicBtn.innerText = "🎵";
+                musicStarted = true;
+            }).catch(() => {});
+        }
     }, { once: true });
 
-    // Palette Logic
+
+    // --- COLOR PALETTE ---
     const colors = [
         '#FF6B6B', '#FF9F43', '#FECA57', '#48DBFB', '#FF9FF3', 
         '#54a0ff', '#5f27cd', '#ff6b6b', '#1dd1a1', '#feca57',
@@ -197,14 +234,12 @@
         paletteDiv.appendChild(swatch);
     });
 
-    // Tool Switching
     window.setTool = (tool) => {
         currentTool = tool;
         document.getElementById('btn-pen').className = tool === 'pen' ? 'tool-btn active' : 'tool-btn';
         document.getElementById('btn-bucket').className = tool === 'bucket' ? 'tool-btn active' : 'tool-btn';
     };
 
-    // Drawing Logic
     const getPos = (e) => {
         const rect = canvas.getBoundingClientRect();
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
@@ -234,7 +269,6 @@
         ctx.moveTo(x, y);
     };
 
-    // Flood Fill Algorithm
     function floodFill(startX, startY, newColor) {
         const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
         const data = imageData.data;
@@ -256,7 +290,6 @@
         ctx.putImageData(imageData, 0, 0);
     }
 
-    // Canvas Events
     canvas.addEventListener('mousedown', start);
     canvas.addEventListener('mousemove', draw);
     window.addEventListener('mouseup', end);
@@ -268,7 +301,6 @@
     window.closeDrawer = () => document.getElementById('draw-modal').style.display = 'none';
     window.clearCanvas = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // Card Logic
     window.openCard = (name, wish, image) => {
         document.getElementById('card-sender').innerText = "From: " + name;
         document.getElementById('card-wish').innerText = wish;
@@ -277,7 +309,6 @@
     }
     window.closeCard = (e) => { if(e.target.id === 'card-modal') document.getElementById('card-modal').style.display = 'none'; }
 
-    // Save & Load
     window.saveFlower = async () => {
         const name = prompt("Your Name:");
         if (!name) return;
@@ -289,7 +320,7 @@
         try {
             await addDoc(collection(db, "wishes"), {
                 name, wish, image: drawingData,
-                // PLANTING AREA: Bottom 40% of the screen (adjust "60" if your ground is higher)
+                // PLANTING AREA: Bottom 40% (60% down the screen)
                 x: Math.random() * 90 + 5, 
                 y: Math.random() * 30 + 60, 
                 timestamp: Date.now()
