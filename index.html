@@ -186,7 +186,8 @@
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    
+    // --- ADD THIS AT THE TOP ---
+let existingFlowers = []; // We will store all positions here
     // Setup Canvas
     const canvas = document.getElementById('drawingCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
@@ -328,11 +329,10 @@
  window.saveFlower = async () => {
         const name = prompt("Your Name:");
         if (!name) return;
-        
         const wish = prompt("Write your birthday wish:");
         if (!wish) return;
 
-        // Check for bad words (Optional, if you kept the filter)
+        // Check for bad words (Optional)
         if (typeof containsBadWords === "function" && (containsBadWords(name) || containsBadWords(wish))) {
              alert("⚠️ Please keep your message kind!");
              return;
@@ -341,25 +341,51 @@
         const drawingData = canvas.toDataURL("image/png");
         
         try {
-            // 1. Check if we are on mobile (Screen width less than 600px)
+            // --- SMART POSITIONING ALGORITHM ---
+            
+            // 1. Define Boundaries
             const isMobile = window.innerWidth < 600;
-
-            // 2. Set limits based on screen size
-            // Mobile: Plants between 55% and 75% down the screen (Leaves bottom 25% empty for button)
-            // Laptop: Plants between 60% and 90% down the screen
             const minY = isMobile ? 55 : 60; 
             const maxY = isMobile ? 75 : 90; 
-            const range = maxY - minY;
+            
+            let bestCandidate = { x: 0, y: 0 };
+            let bestDistance = -1;
+
+            // 2. Try 10 times to find the best empty spot
+            // (If garden is empty, the loop runs once and picks the first random spot)
+            const attempts = existingFlowers.length === 0 ? 1 : 10;
+
+            for (let i = 0; i < attempts; i++) {
+                // Generate a random spot
+                const candidate = {
+                    x: Math.random() * 80 + 10,
+                    y: Math.random() * (maxY - minY) + minY
+                };
+
+                // Measure distance to the NEAREST neighbor
+                let closestDist = Number.MAX_VALUE;
+                
+                for (let f of existingFlowers) {
+                    // Simple distance formula (Pythagoras)
+                    const d = Math.sqrt( Math.pow(candidate.x - f.x, 2) + Math.pow(candidate.y - f.y, 2) );
+                    if (d < closestDist) {
+                        closestDist = d;
+                    }
+                }
+
+                // If this spot is further from neighbors than our previous best, keep it!
+                if (closestDist > bestDistance) {
+                    bestDistance = closestDist;
+                    bestCandidate = candidate;
+                }
+            }
+            
+            // --- END ALGORITHM ---
 
             await addDoc(collection(db, "wishes"), {
                 name, wish, image: drawingData,
-                
-                // X: Keep away from extreme left/right edges (10% to 90%)
-                x: Math.random() * 80 + 10, 
-                
-                // Y: Random position strictly within our safe zone
-                y: Math.random() * range + minY,
-                
+                x: bestCandidate.x, 
+                y: bestCandidate.y,
                 timestamp: Date.now()
             });
 
@@ -374,8 +400,16 @@
     onSnapshot(q, (snapshot) => {
         const container = document.getElementById('garden-container');
         container.innerHTML = ''; 
+        
+        // 1. RESET THE LIST
+        existingFlowers = []; 
+
         snapshot.forEach((doc) => {
             const data = doc.data();
+            
+            // 2. SAVE POSITION TO LIST
+            existingFlowers.push({ x: data.x, y: data.y });
+
             const div = document.createElement('div');
             div.className = 'flower';
             div.style.left = data.x + '%';
@@ -385,10 +419,14 @@
             const img = document.createElement('img');
             img.src = data.image;
             div.appendChild(img);
-            div.onclick = () => openCard(data.name, data.wish, data.image);
+            
+            // Use doc.id for deleting
+            div.onclick = () => openCard(doc.id, data.name, data.wish, data.image);
+            
             container.appendChild(div);
         });
     });
+    
 </script>
 </body>
 </html>
