@@ -170,69 +170,80 @@
 
 <script type="module">
     import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-    import { getFirestore, collection, addDoc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+    import { getFirestore, collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 
     // --- PASTE YOUR FIREBASE CONFIG HERE ---
     const firebaseConfig = {
-        apiKey: "AIzaSyCUUyrmqbyUzf5f4-GKidLsW0HsCVNjU0o",
+    apiKey: "AIzaSyCUUyrmqbyUzf5f4-GKidLsW0HsCVNjU0o",
     authDomain: "ccbirthdaygarden.firebaseapp.com",
     projectId: "ccbirthdaygarden",
     storageBucket: "ccbirthdaygarden.firebasestorage.app",
     messagingSenderId: "706882366980",
     appId: "1:706882366980:web:c7a9cc8be0b1ca0d190f51"
-
     };
     // ---------------------------------------
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
-    // --- ADD THIS AT THE TOP ---
-let existingFlowers = []; // We will store all positions here
-    // Setup Canvas
+    
+    // --- GLOBAL VARIABLES (This fixes the click error!) ---
+    let currentFlowerId = null; 
+    let existingFlowers = []; 
+    let adminMode = false;
+    let clickCount = 0;
+
+    // --- ADMIN & SAFETY ---
+    window.unlockAdmin = () => {
+        clickCount++;
+        if (clickCount === 5) {
+            const pass = prompt("Enter Admin Password:");
+            if (pass === "admin123") { 
+                adminMode = true;
+                alert("Admin Mode Unlocked! Click a flower to delete it.");
+            } else {
+                alert("Wrong password.");
+            }
+            clickCount = 0;
+        }
+    };
+
+    window.deleteCurrentFlower = async () => {
+        if (!currentFlowerId || !adminMode) return;
+        if (confirm("Delete this flower?")) {
+            await deleteDoc(doc(db, "wishes", currentFlowerId));
+            document.getElementById('card-modal').style.display = 'none';
+        }
+    };
+
+    // --- CANVAS & TOOLS ---
     const canvas = document.getElementById('drawingCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
-    
     let drawing = false;
     let currentTool = 'pen'; 
     let currentColor = '#FF6B6B'; 
     let currentRgb = { r: 255, g: 107, b: 107 }; 
 
-    // --- MUSIC LOGIC ---
+    // --- MUSIC ---
     const audio = document.getElementById('bgm');
     const musicBtn = document.getElementById('music-control');
     let musicStarted = false;
 
-    // 1. Manual Toggle Button
     window.toggleMusic = () => {
         if (audio.paused) {
-            audio.play().then(() => {
-                musicBtn.innerText = "🎵"; // Playing icon
-                musicStarted = true;
-            });
+            audio.play().then(() => { musicBtn.innerText = "🎵"; musicStarted = true; });
         } else {
-            audio.pause();
-            musicBtn.innerText = "🔇"; // Muted icon
+            audio.pause(); musicBtn.innerText = "🔇";
         }
     };
 
-    // 2. Auto-Start on First Click (Anywhere)
     window.addEventListener('click', () => {
         if (!musicStarted && audio.paused) {
-            audio.play().then(() => {
-                musicBtn.innerText = "🎵";
-                musicStarted = true;
-            }).catch(() => {});
+            audio.play().then(() => { musicBtn.innerText = "🎵"; musicStarted = true; }).catch(() => {});
         }
     }, { once: true });
 
-
     // --- COLOR PALETTE ---
-    const colors = [
-        '#FF6B6B', '#FF9F43', '#FECA57', '#48DBFB', '#FF9FF3', 
-        '#54a0ff', '#5f27cd', '#ff6b6b', '#1dd1a1', '#feca57',
-        '#2e86de', '#8395a7', '#222f3e', '#c8d6e5', '#10ac84',
-        '#01a3a4', '#f368e0', '#00d2d3', '#341f97', '#273c75'
-    ];
+    const colors = ['#FF6B6B', '#FF9F43', '#FECA57', '#48DBFB', '#FF9FF3', '#54a0ff', '#5f27cd', '#ff6b6b', '#1dd1a1', '#feca57', '#2e86de', '#8395a7', '#222f3e', '#c8d6e5', '#10ac84', '#01a3a4', '#f368e0', '#00d2d3', '#341f97', '#273c75'];
     function hexToRgb(hex) {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
@@ -251,6 +262,7 @@ let existingFlowers = []; // We will store all positions here
         paletteDiv.appendChild(swatch);
     });
 
+    // --- DRAWING LOGIC ---
     window.setTool = (tool) => {
         currentTool = tool;
         document.getElementById('btn-pen').className = tool === 'pen' ? 'tool-btn active' : 'tool-btn';
@@ -266,12 +278,7 @@ let existingFlowers = []; // We will store all positions here
 
     const start = (e) => {
         const { x, y } = getPos(e);
-        if (currentTool === 'bucket') {
-            floodFill(x, y, currentRgb);
-        } else {
-            drawing = true;
-            draw(e);
-        }
+        if (currentTool === 'bucket') { floodFill(x, y, currentRgb); } else { drawing = true; draw(e); }
     };
     const end = () => { drawing = false; ctx.beginPath(); };
     const draw = (e) => {
@@ -291,16 +298,13 @@ let existingFlowers = []; // We will store all positions here
         const data = imageData.data;
         const startPos = (startY * canvas.width + startX) * 4;
         const startR = data[startPos], startG = data[startPos+1], startB = data[startPos+2], startA = data[startPos+3];
-
         if (startR === newColor.r && startG === newColor.g && startB === newColor.b && startA === 255) return;
-
         const stack = [[startX, startY]];
         while (stack.length) {
             const [x, y] = stack.pop();
             const pos = (y * canvas.width + x) * 4;
             if (x < 0 || x >= canvas.width || y < 0 || y >= canvas.height) continue;
             if (data[pos] !== startR || data[pos+1] !== startG || data[pos+2] !== startB || data[pos+3] !== startA) continue;
-
             data[pos] = newColor.r; data[pos+1] = newColor.g; data[pos+2] = newColor.b; data[pos+3] = 255;
             stack.push([x + 1, y], [x - 1, y], [x, y + 1], [x, y - 1]);
         }
@@ -318,79 +322,56 @@ let existingFlowers = []; // We will store all positions here
     window.closeDrawer = () => document.getElementById('draw-modal').style.display = 'none';
     window.clearCanvas = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // UPDATED: Now accepts "id" as the first item
+    // --- OPEN CARD LOGIC (The Fix!) ---
     window.openCard = (id, name, wish, image) => {
-        // We save the ID in a variable (in case you want to delete it later)
-        currentFlowerId = id; 
-        
+        currentFlowerId = id; // This variable now exists!
         document.getElementById('card-sender').innerText = "From: " + name;
         document.getElementById('card-wish').innerText = wish;
         document.getElementById('card-image').src = image;
         document.getElementById('card-modal').style.display = 'flex';
         
-        // (Optional) If you have the delete button, show/hide it here
+        // Show delete button only if admin
         const delBtn = document.getElementById('admin-delete-btn');
-        if (delBtn) {
-            delBtn.style.display = (typeof adminMode !== 'undefined' && adminMode) ? 'block' : 'none';
-        }
+        if(delBtn) delBtn.style.display = adminMode ? 'block' : 'none';
     }
+    
     window.closeCard = (e) => { if(e.target.id === 'card-modal') document.getElementById('card-modal').style.display = 'none'; }
 
- window.saveFlower = async () => {
+    // --- SAVE LOGIC (Smart Positioning) ---
+    window.saveFlower = async () => {
         const name = prompt("Your Name:");
         if (!name) return;
         const wish = prompt("Write your birthday wish:");
         if (!wish) return;
 
-        // Check for bad words (Optional)
-        if (typeof containsBadWords === "function" && (containsBadWords(name) || containsBadWords(wish))) {
-             alert("⚠️ Please keep your message kind!");
-             return;
-        }
-
         const drawingData = canvas.toDataURL("image/png");
         
         try {
-            // --- SMART POSITIONING ALGORITHM ---
-            
-            // 1. Define Boundaries
+            // Screen Limits
             const isMobile = window.innerWidth < 600;
             const minY = isMobile ? 55 : 60; 
             const maxY = isMobile ? 75 : 90; 
             
+            // Smart Position Algorithm (Best of 10)
             let bestCandidate = { x: 0, y: 0 };
             let bestDistance = -1;
-
-            // 2. Try 10 times to find the best empty spot
-            // (If garden is empty, the loop runs once and picks the first random spot)
             const attempts = existingFlowers.length === 0 ? 1 : 10;
 
             for (let i = 0; i < attempts; i++) {
-                // Generate a random spot
                 const candidate = {
                     x: Math.random() * 80 + 10,
                     y: Math.random() * (maxY - minY) + minY
                 };
-
-                // Measure distance to the NEAREST neighbor
                 let closestDist = Number.MAX_VALUE;
-                
                 for (let f of existingFlowers) {
-                    // Simple distance formula (Pythagoras)
                     const d = Math.sqrt( Math.pow(candidate.x - f.x, 2) + Math.pow(candidate.y - f.y, 2) );
-                    if (d < closestDist) {
-                        closestDist = d;
-                    }
+                    if (d < closestDist) closestDist = d;
                 }
-
-                // If this spot is further from neighbors than our previous best, keep it!
                 if (closestDist > bestDistance) {
                     bestDistance = closestDist;
                     bestCandidate = candidate;
                 }
             }
-            
-            // --- END ALGORITHM ---
 
             await addDoc(collection(db, "wishes"), {
                 name, wish, image: drawingData,
@@ -398,7 +379,6 @@ let existingFlowers = []; // We will store all positions here
                 y: bestCandidate.y,
                 timestamp: Date.now()
             });
-
             closeDrawer();
             clearCanvas();
         } catch (error) {
@@ -406,19 +386,16 @@ let existingFlowers = []; // We will store all positions here
         }
     };
 
+    // --- LISTENER (Updates Garden) ---
     const q = query(collection(db, "wishes"), orderBy("timestamp", "asc"));
     onSnapshot(q, (snapshot) => {
         const container = document.getElementById('garden-container');
         container.innerHTML = ''; 
-        
-        // 1. RESET THE LIST
         existingFlowers = []; 
 
         snapshot.forEach((doc) => {
             const data = doc.data();
-            
-            // 2. SAVE POSITION TO LIST
-            existingFlowers.push({ x: data.x, y: data.y });
+            existingFlowers.push({ x: data.x, y: data.y }); // Remember position
 
             const div = document.createElement('div');
             div.className = 'flower';
@@ -430,13 +407,12 @@ let existingFlowers = []; // We will store all positions here
             img.src = data.image;
             div.appendChild(img);
             
-            // Use doc.id for deleting
+            // Fix: Pass ID first, then Name, then Wish
             div.onclick = () => openCard(doc.id, data.name, data.wish, data.image);
             
             container.appendChild(div);
         });
     });
-    
 </script>
 </body>
 </html>
