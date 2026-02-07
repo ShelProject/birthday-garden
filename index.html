@@ -318,11 +318,21 @@ let existingFlowers = []; // We will store all positions here
     window.closeDrawer = () => document.getElementById('draw-modal').style.display = 'none';
     window.clearCanvas = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    window.openCard = (name, wish, image) => {
+    // UPDATED: Now accepts "id" as the first item
+    window.openCard = (id, name, wish, image) => {
+        // We save the ID in a variable (in case you want to delete it later)
+        currentFlowerId = id; 
+        
         document.getElementById('card-sender').innerText = "From: " + name;
         document.getElementById('card-wish').innerText = wish;
         document.getElementById('card-image').src = image;
         document.getElementById('card-modal').style.display = 'flex';
+        
+        // (Optional) If you have the delete button, show/hide it here
+        const delBtn = document.getElementById('admin-delete-btn');
+        if (delBtn) {
+            delBtn.style.display = (typeof adminMode !== 'undefined' && adminMode) ? 'block' : 'none';
+        }
     }
     window.closeCard = (e) => { if(e.target.id === 'card-modal') document.getElementById('card-modal').style.display = 'none'; }
 
