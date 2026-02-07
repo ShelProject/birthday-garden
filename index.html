@@ -97,6 +97,18 @@
             cursor: pointer; transform-origin: bottom center; 
             animation: sway 3s ease-in-out infinite alternate;
         }
+        @media (max-width: 600px) {
+    .flower {
+        width: 60px; height: 60px; /* Smaller for Phone */
+    }
+    h1 {
+        font-size: 2.5rem; /* Fix big title on phone */
+        top: 15%; /* Move title down slightly */
+    }
+    #ui {
+        bottom: 20px; /* Move button slightly lower */
+    }
+}
         .flower:hover { transform: scale(1.3) translateY(-10px) !important; z-index: 99; }
         .flower img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.3)); }
         @keyframes sway { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
@@ -313,22 +325,44 @@
     }
     window.closeCard = (e) => { if(e.target.id === 'card-modal') document.getElementById('card-modal').style.display = 'none'; }
 
-    window.saveFlower = async () => {
+ window.saveFlower = async () => {
         const name = prompt("Your Name:");
         if (!name) return;
+        
         const wish = prompt("Write your birthday wish:");
         if (!wish) return;
+
+        // Check for bad words (Optional, if you kept the filter)
+        if (typeof containsBadWords === "function" && (containsBadWords(name) || containsBadWords(wish))) {
+             alert("⚠️ Please keep your message kind!");
+             return;
+        }
 
         const drawingData = canvas.toDataURL("image/png");
         
         try {
+            // 1. Check if we are on mobile (Screen width less than 600px)
+            const isMobile = window.innerWidth < 600;
+
+            // 2. Set limits based on screen size
+            // Mobile: Plants between 55% and 75% down the screen (Leaves bottom 25% empty for button)
+            // Laptop: Plants between 60% and 90% down the screen
+            const minY = isMobile ? 55 : 60; 
+            const maxY = isMobile ? 75 : 90; 
+            const range = maxY - minY;
+
             await addDoc(collection(db, "wishes"), {
                 name, wish, image: drawingData,
-                // PLANTING AREA: Bottom 40% (60% down the screen)
-                x: Math.random() * 90 + 5, 
-                y: Math.random() * 30 + 60, 
+                
+                // X: Keep away from extreme left/right edges (10% to 90%)
+                x: Math.random() * 80 + 10, 
+                
+                // Y: Random position strictly within our safe zone
+                y: Math.random() * range + minY,
+                
                 timestamp: Date.now()
             });
+
             closeDrawer();
             clearCanvas();
         } catch (error) {
