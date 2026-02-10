@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -8,57 +7,50 @@
     <title>Birthday Garden</title>
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🌻</text></svg>">
     
-    <meta property="og:title" content="Happy Birthday! 🎂">
-    <meta property="og:description" content="Come plant a flower in our digital surprise garden!">
-    
     <link href="https://fonts.googleapis.com/css2?family=Dancing+Script:wght@700&family=Montserrat:wght@400;600&display=swap" rel="stylesheet">
+    
     <style>
         :root {
-            /* 📸 YOUR BACKGROUND IMAGE (Upload 'background.jpeg' to GitHub) */
-            --bg-image: url('gardenbackground.jpeg');
+            /* 📸 YOUR BACKGROUND - Make sure file name matches exactly! */
+            --bg-image: url('gardenbackground.jpeg'); 
         }
 
-        body, html { margin: 0; padding: 0; overflow: hidden; height: 100%; font-family: 'Nunito', sans-serif; }
+        body, html { margin: 0; padding: 0; overflow: hidden; height: 100%; font-family: 'Montserrat', sans-serif; }
 
-        /* --- THE WORLD --- */
         #world {
             position: relative; width: 100%; height: 100%; overflow: hidden;
             background-image: var(--bg-image);
-            background-size: cover;
-            background-position: center;
+            background-size: cover; background-position: center;
         }
 
         /* --- TITLE --- */
-        #main-title { position: absolute; top: 10%; width: 100%; text-align: center; z-index: 10; pointer-events: none; }
+        #main-title { position: absolute; top: 10%; width: 100%; text-align: center; z-index: 10; cursor: default; }
         h1 {
-            font-family: 'Dancing Script', cursive; color: #fff; font-size: 3.5rem; margin: 0;
+            font-family: 'Dancing Script', cursive; color: #fff; font-size: 4.5rem; margin: 0;
             text-shadow: 0px 4px 10px rgba(0,0,0,0.5); animation: float 4s ease-in-out infinite;
+            user-select: none;
         }
         @keyframes float { 0% { transform: translateY(0px); } 50% { transform: translateY(-15px); } 100% { transform: translateY(0px); } }
 
-        /* --- UI BUTTONS --- */
+        /* --- UI --- */
         #ui { position: absolute; bottom: 30px; width: 100%; text-align: center; z-index: 50; pointer-events: none; }
-        
         .big-btn { 
             pointer-events: auto; background: #FF6B6B; color: white; 
-            font-family: 'Montserrat', sans-serif; font-weight: 600;
-            font-size: 1.2rem;
+            font-family: 'Montserrat', sans-serif; font-weight: 600; font-size: 1.2rem;
             padding: 15px 30px; border-radius: 50px; border: none;
-            box-shadow: 0 6px 0px #C92A2A, 0 10px 10px rgba(0,0,0,0.2); cursor: pointer; transition: transform 0.1s;
+            box-shadow: 0 6px 0px #C92A2A, 0 10px 10px rgba(0,0,0,0.2); 
+            cursor: pointer; transition: transform 0.1s;
         }
         .big-btn:active { transform: translateY(4px); box-shadow: 0 2px 0px #C92A2A; }
 
-        /* --- MUSIC BUTTON --- */
         #music-control {
             position: absolute; top: 20px; right: 20px; z-index: 60;
             background: white; border: none; border-radius: 50%;
             width: 50px; height: 50px; font-size: 24px; cursor: pointer;
             box-shadow: 0 4px 10px rgba(0,0,0,0.3); display: flex; align-items: center; justify-content: center;
-            transition: transform 0.2s;
         }
-        #music-control:active { transform: scale(0.9); }
 
-        /* --- DRAWING MODAL --- */
+        /* --- MODAL --- */
         .modal-overlay {
             display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.85);
             z-index: 100; align-items: center; justify-content: center; backdrop-filter: blur(5px);
@@ -69,7 +61,6 @@
             max-width: 90%; width: 350px; position: relative;
         }
         
-        /* Tools */
         .tool-bar { display: flex; justify-content: center; gap: 10px; margin-bottom: 10px; }
         .tool-btn {
             background: #eee; border: 2px solid #ddd; padding: 8px 15px;
@@ -79,47 +70,43 @@
 
         canvas { border: 2px dashed #ccc; border-radius: 15px; cursor: crosshair; touch-action: none; background: #fff; }
 
-        .palette { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; margin: 15px 0; }
+        .palette { display: flex; flex-wrap: wrap; gap: 5px; justify-content: center; margin: 15px 0; }
         .swatch {
-            width: 30px; height: 30px; border-radius: 50%; cursor: pointer;
+            width: 25px; height: 25px; border-radius: 50%; cursor: pointer;
             border: 2px solid white; box-shadow: 0 2px 5px rgba(0,0,0,0.2);
         }
 
-        /* --- CARD POPUP --- */
-        #card-content { background: #fff9f0; border: 4px solid #FFD700; }
+        /* --- CARD --- */
+        #card-content { background: #fff9f0; border: 4px solid #FFD700; position: relative; }
         #card-image { width: 180px; height: 180px; object-fit: contain; margin: 10px auto; display: block; filter: drop-shadow(0 4px 4px rgba(0,0,0,0.1)); }
-        #card-wish { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; color: #555; margin: 15px 0; font-style: italic; line-height: 1.5; }
         #card-sender { font-family: 'Dancing Script', cursive; font-size: 2.2rem; color: #FF6B6B; }
+        #card-wish { font-family: 'Montserrat', sans-serif; font-size: 1.1rem; color: #555; margin: 15px 0; font-style: italic; line-height: 1.6; }
+        
+        #admin-delete-btn {
+            display: none; background: #ff0000; color: white; width: 100%; 
+            padding: 10px; border: none; font-weight: bold; margin-top: 10px; cursor: pointer;
+        }
 
-        /* --- FLOWER STYLING --- */
+        /* --- FLOWER --- */
         .flower {
             position: absolute; width: 80px; height: 80px; z-index: 5;
             cursor: pointer; transform-origin: bottom center; 
             animation: sway 3s ease-in-out infinite alternate;
         }
-        @media (max-width: 600px) {
-    .flower {
-        width: 60px; height: 60px; /* Smaller for Phone */
-    }
-    h1 {
-        font-size: 2.5rem; /* Fix big title on phone */
-        top: 15%; /* Move title down slightly */
-    }
-    #ui {
-        bottom: 20px; /* Move button slightly lower */
-    }
-}
         .flower:hover { transform: scale(1.3) translateY(-10px) !important; z-index: 99; }
         .flower img { width: 100%; height: 100%; object-fit: contain; filter: drop-shadow(0px 5px 5px rgba(0,0,0,0.3)); }
         @keyframes sway { from { transform: rotate(-3deg); } to { transform: rotate(3deg); } }
 
-        .btn-group { display: flex; gap: 10px; justify-content: center; margin-top: 15px; }
-        button.secondary { background: #eee; color: #333; padding: 10px 20px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; }
-        button.primary { background: #4CAF50; color: white; padding: 10px 20px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; }
-      
+        .btn-group { display: flex; gap: 5px; justify-content: center; margin-top: 15px; flex-wrap: wrap;}
+        button.secondary { background: #eee; color: #333; padding: 10px 15px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; font-family: 'Montserrat', sans-serif;}
+        button.primary { background: #4CAF50; color: white; padding: 10px 20px; border-radius: 20px; border: none; font-weight: bold; cursor: pointer; font-family: 'Montserrat', sans-serif;}
+
+        /* Mobile Adjustments */
         @media (max-width: 600px) {
-    h1 { font-size: 3rem; } /* Smaller font on phones */
-}  
+            .flower { width: 60px; height: 60px; }
+            h1 { font-size: 3rem; top: 15%; }
+            #ui { bottom: 20px; }
+        }
     </style>
 </head>
 <body>
@@ -130,12 +117,11 @@
 
 <div id="world">
     <button id="music-control" onclick="toggleMusic()">🔇</button>
-
     <div id="garden-container"></div>
 </div>
 
-<div id="main-title">
-    <h1>Chapter 26: The Wish Field</h1>
+<div id="main-title" onclick="unlockAdmin()">
+    <h1>Chapter 26: In Full Bloom</h1>
 </div>
 
 <div id="ui">
@@ -148,11 +134,13 @@
             <button id="btn-pen" class="tool-btn active" onclick="setTool('pen')">✏️ Pen</button>
             <button id="btn-bucket" class="tool-btn" onclick="setTool('bucket')">🪣 Fill</button>
         </div>
-
+        
         <canvas id="drawingCanvas" width="300" height="300"></canvas>
         <div class="palette" id="colorPalette"></div>
+        
         <div class="btn-group">
             <button class="secondary" onclick="closeDrawer()">Cancel</button>
+            <button class="secondary" onclick="undoLast()">↩️ Undo</button>
             <button class="secondary" onclick="clearCanvas()">Clear</button>
             <button class="primary" onclick="saveFlower()">Plant it!</button>
         </div>
@@ -164,6 +152,7 @@
         <h2 id="card-sender">Sender Name</h2>
         <img id="card-image" src="" alt="Flower">
         <p id="card-wish">"Wish..."</p>
+        <button id="admin-delete-btn" onclick="deleteCurrentFlower()">🗑️ DELETE THIS FLOWER</button>
         <button class="secondary" onclick="document.getElementById('card-modal').style.display='none'">Close Card</button>
     </div>
 </div>
@@ -174,32 +163,35 @@
 
     // --- PASTE YOUR FIREBASE CONFIG HERE ---
     const firebaseConfig = {
-    apiKey: "AIzaSyCUUyrmqbyUzf5f4-GKidLsW0HsCVNjU0o",
-    authDomain: "ccbirthdaygarden.firebaseapp.com",
-    projectId: "ccbirthdaygarden",
-    storageBucket: "ccbirthdaygarden.firebasestorage.app",
-    messagingSenderId: "706882366980",
-    appId: "1:706882366980:web:c7a9cc8be0b1ca0d190f51"
+        apiKey: "YOUR_API_KEY", 
+        authDomain: "YOUR_PROJECT.firebaseapp.com",
+        projectId: "YOUR_PROJECT_ID",
+        storageBucket: "YOUR_PROJECT.appspot.com",
+        messagingSenderId: "123...",
+        appId: "1:234..."
     };
     // ---------------------------------------
 
     const app = initializeApp(firebaseConfig);
     const db = getFirestore(app);
     
-    // --- GLOBAL VARIABLES (This fixes the click error!) ---
+    // Global Vars
     let currentFlowerId = null; 
     let existingFlowers = []; 
     let adminMode = false;
     let clickCount = 0;
+    
+    // Undo Stack
+    let undoStack = []; 
 
-    // --- ADMIN & SAFETY ---
+    // Admin
     window.unlockAdmin = () => {
         clickCount++;
         if (clickCount === 5) {
             const pass = prompt("Enter Admin Password:");
             if (pass === "admin123") { 
                 adminMode = true;
-                alert("Admin Mode Unlocked! Click a flower to delete it.");
+                alert("Admin Mode Unlocked!");
             } else {
                 alert("Wrong password.");
             }
@@ -215,15 +207,15 @@
         }
     };
 
-    // --- CANVAS & TOOLS ---
+    // Canvas
     const canvas = document.getElementById('drawingCanvas');
     const ctx = canvas.getContext('2d', { willReadFrequently: true });
     let drawing = false;
     let currentTool = 'pen'; 
-    let currentColor = '#FF6B6B'; 
-    let currentRgb = { r: 255, g: 107, b: 107 }; 
+    let currentColor = '#FF3B30'; // Default Red
+    let currentRgb = { r: 255, g: 59, b: 48 }; 
 
-    // --- MUSIC ---
+    // Music
     const audio = document.getElementById('bgm');
     const musicBtn = document.getElementById('music-control');
     let musicStarted = false;
@@ -242,8 +234,13 @@
         }
     }, { once: true });
 
-    // --- COLOR PALETTE ---
-    const colors = ['#FF6B6B', '#FF9F43', '#FECA57', '#48DBFB', '#FF9FF3', '#54a0ff', '#5f27cd', '#ff6b6b', '#1dd1a1', '#feca57', '#2e86de', '#8395a7', '#222f3e', '#c8d6e5', '#10ac84', '#01a3a4', '#f368e0', '#00d2d3', '#341f97', '#273c75'];
+    // --- NEW COLOR PALETTE (Matches your image!) ---
+    const colors = [
+        '#FF3B30', '#FF2D55', '#AF52DE', '#5856D6', '#007AFF', '#34C759', 
+        '#FFCC00', '#FF9500', '#FF5E3A', '#8E8E93', '#000000', '#FFFFFF',
+        '#5AC8FA', '#4CD964', '#FF3B30', '#A2845E'
+    ];
+    
     function hexToRgb(hex) {
         const result = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
         return result ? { r: parseInt(result[1], 16), g: parseInt(result[2], 16), b: parseInt(result[3], 16) } : null;
@@ -262,7 +259,22 @@
         paletteDiv.appendChild(swatch);
     });
 
-    // --- DRAWING LOGIC ---
+    // Undo Logic
+    function saveState() {
+        if (undoStack.length > 10) undoStack.shift();
+        undoStack.push(ctx.getImageData(0, 0, canvas.width, canvas.height));
+    }
+
+    window.undoLast = () => {
+        if (undoStack.length > 0) {
+            const lastState = undoStack.pop();
+            ctx.putImageData(lastState, 0, 0);
+        } else {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+        }
+    };
+
+    // Drawing Logic
     window.setTool = (tool) => {
         currentTool = tool;
         document.getElementById('btn-pen').className = tool === 'pen' ? 'tool-btn active' : 'tool-btn';
@@ -277,6 +289,7 @@
     };
 
     const start = (e) => {
+        saveState(); 
         const { x, y } = getPos(e);
         if (currentTool === 'bucket') { floodFill(x, y, currentRgb); } else { drawing = true; draw(e); }
     };
@@ -318,41 +331,48 @@
     canvas.addEventListener('touchmove', (e) => { e.preventDefault(); draw(e); });
     canvas.addEventListener('touchend', end);
 
-    window.openDrawer = () => document.getElementById('draw-modal').style.display = 'flex';
+    window.openDrawer = () => {
+        undoStack = []; 
+        document.getElementById('draw-modal').style.display = 'flex';
+    }
     window.closeDrawer = () => document.getElementById('draw-modal').style.display = 'none';
     window.clearCanvas = () => ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    // --- OPEN CARD LOGIC (The Fix!) ---
+    // --- FIX: OPEN CARD WITH ID ---
     window.openCard = (id, name, wish, image) => {
-        currentFlowerId = id; // This variable now exists!
+        currentFlowerId = id; 
         document.getElementById('card-sender').innerText = "From: " + name;
         document.getElementById('card-wish').innerText = wish;
         document.getElementById('card-image').src = image;
         document.getElementById('card-modal').style.display = 'flex';
         
-        // Show delete button only if admin
         const delBtn = document.getElementById('admin-delete-btn');
         if(delBtn) delBtn.style.display = adminMode ? 'block' : 'none';
     }
     
     window.closeCard = (e) => { if(e.target.id === 'card-modal') document.getElementById('card-modal').style.display = 'none'; }
 
-    // --- SAVE LOGIC (Smart Positioning) ---
+    // --- SAVE LOGIC (SMART & MOBILE SAFE) ---
     window.saveFlower = async () => {
         const name = prompt("Your Name:");
         if (!name) return;
         const wish = prompt("Write your birthday wish:");
         if (!wish) return;
 
-        const drawingData = canvas.toDataURL("image/png");
-        
+        // --- STEP 1: TAKE THE PICTURE FIRST! (Critical Fix) ---
+        // We must capture the drawing BEFORE we clear the canvas.
+        const drawingData = canvas.toDataURL("image/png"); 
+        // ------------------------------------------------------
+
+        // --- STEP 2: NOW close and clear ---
+        closeDrawer(); 
+        clearCanvas(); 
+
         try {
-            // Screen Limits
             const isMobile = window.innerWidth < 600;
             const minY = isMobile ? 55 : 60; 
             const maxY = isMobile ? 75 : 90; 
             
-            // Smart Position Algorithm (Best of 10)
             let bestCandidate = { x: 0, y: 0 };
             let bestDistance = -1;
             const attempts = existingFlowers.length === 0 ? 1 : 10;
@@ -373,20 +393,19 @@
                 }
             }
 
+            // --- STEP 3: Save the data we captured in Step 1 ---
             await addDoc(collection(db, "wishes"), {
-                name, wish, image: drawingData,
+                name, wish, image: drawingData, // Using the saved image
                 x: bestCandidate.x, 
                 y: bestCandidate.y,
                 timestamp: Date.now()
             });
-            closeDrawer();
-            clearCanvas();
+            
         } catch (error) {
             alert("Error: " + error.message);
         }
     };
 
-    // --- LISTENER (Updates Garden) ---
     const q = query(collection(db, "wishes"), orderBy("timestamp", "asc"));
     onSnapshot(q, (snapshot) => {
         const container = document.getElementById('garden-container');
@@ -395,7 +414,7 @@
 
         snapshot.forEach((doc) => {
             const data = doc.data();
-            existingFlowers.push({ x: data.x, y: data.y }); // Remember position
+            existingFlowers.push({ x: data.x, y: data.y }); 
 
             const div = document.createElement('div');
             div.className = 'flower';
@@ -407,7 +426,7 @@
             img.src = data.image;
             div.appendChild(img);
             
-            // Fix: Pass ID first, then Name, then Wish
+            // --- FIX: Pass ID first, then Name ---
             div.onclick = () => openCard(doc.id, data.name, data.wish, data.image);
             
             container.appendChild(div);
